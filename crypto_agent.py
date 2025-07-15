@@ -17,6 +17,9 @@ exchange = ccxt.binance({
 })
 
 def fetch_ohlcv(symbol='BTC/USDT', timeframe='5m', limit=200):
+    exchange.set_sandbox_mode(True)  # Ensure sandbox is used
+    markets = exchange.load_markets()
+
     data = exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
     df = pd.DataFrame(data, columns=['timestamp','open','high','low','close','volume'])
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
