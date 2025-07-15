@@ -18,7 +18,7 @@ st.metric("Available USDT (Testnet)", f"{usdt_balance:.2f} USDT")
 
 # 🎛️ User controls
 symbol = st.selectbox("Select Pair", ["BTC/USDT", "ETH/USDT"])
-confidence_threshold = st.slider("Signal Confidence Threshold", 0.5, 0.95, 0.75)
+confidence_threshold = st.slider("Signal Confidence Threshold", 0.2, 0.95, 0.20)
 trade_amount = st.number_input("Trade Amount", min_value=0.001, value=0.01)
 auto_trade = st.checkbox("⚡ Auto Execute Limit Order")
 
