@@ -8,8 +8,8 @@ import time
 
 # --- Binance Futures Testnet Setup ---
 exchange = ccxt.binance({
-    'apiKey': 'your_testnet_api_key',       # <- Replace with Streamlit secret or .env loading
-    'secret': 'your_testnet_secret_key',
+    'apiKey': '9424f058f6e43ccc326495e1b100dae2b7c74fc520a8936e545d7c0378afeff0',       # <- Replace with Streamlit secret or .env loading
+    'secret': '75c405b431c4620554ee25d2fe4cd5b54daf21f0269d57c6f3509220f72214a0',
     'enableRateLimit': True,
     'options': {'defaultType': 'future'},
     'urls': {'api': 'https://testnet.binancefuture.com'}
