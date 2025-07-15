@@ -1,26 +1,32 @@
 import ccxt
 import pandas as pd
-import numpy as np
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator
 from sklearn.ensemble import RandomForestClassifier
-import streamlit as st
 import datetime
+import time
 
-# --- Connect to Binance Futures Testnet ---
+# --- Binance Futures Testnet Setup ---
 exchange = ccxt.binance({
-    'apiKey': st.secrets["BINANCE_API_KEY"],
-    'secret': st.secrets["BINANCE_SECRET"],
+    'apiKey': 'your_testnet_api_key',       # <- Replace with Streamlit secret or .env loading
+    'secret': 'your_testnet_secret_key',
     'enableRateLimit': True,
     'options': {'defaultType': 'future'},
     'urls': {'api': 'https://testnet.binancefuture.com'}
 })
 
-def fetch_ohlcv(symbol='BTC/USDT', timeframe='5m', limit=200):
-    exchange.set_sandbox_mode(True)  # Ensure sandbox is used
-    markets = exchange.load_markets()
+# 🛠 Testnet compatibility fixes
+exchange.set_sandbox_mode(True)
+exchange.has['fetchCurrencies'] = False
+exchange.options['warnOnFetchCurrenciesWithoutAuthorization'] = False
 
-    data = exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+symbol = 'BTC/USDT'
+timeframe = '5m'
+trade_amount = 0.01
+confidence_threshold = 0.75
+
+def fetch_ohlcv():
+    data = exchange.fetch_ohlcv(symbol, timeframe, limit=200)
     df = pd.DataFrame(data, columns=['timestamp','open','high','low','close','volume'])
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
     return df
@@ -46,19 +52,44 @@ def train_model(X, y):
 
 def evaluate_signal(model, latest_X):
     pred = model.predict(latest_X)
-    proba = model.predict_proba(latest_X)[0][1]
-    direction = "BUY" if pred[0] == 1 else "SELL"
-    return direction, proba
+    confidence = model.predict_proba(latest_X)[0][1]
+    direction = 'BUY' if pred[0] == 1 else 'SELL'
+    return direction, confidence
 
-def place_limit_order(symbol, side, amount):
+def place_limit_order(direction):
     ticker = exchange.fetch_ticker(symbol)
-    price = ticker['ask'] if side.lower() == 'buy' else ticker['bid']
+    price = ticker['ask'] if direction.lower() == 'buy' else ticker['bid']
     order = exchange.create_order(
         symbol=symbol,
         type='limit',
-        side=side.lower(),
-        amount=amount,
+        side=direction.lower(),
+        amount=trade_amount,
         price=price,
         params={'reduceOnly': False}
     )
+    print(f"📥 Placed LIMIT ORDER: {direction} {trade_amount} @ {price}")
     return order
+
+# --- Main Auto Loop ---
+print("🚀 Auto trading bot running...")
+
+while True:
+    try:
+        df = fetch_ohlcv()
+        X, y = prepare_features(df)
+        model = train_model(X, y)
+        latest_X = X.iloc[-1:]
+        direction, confidence = evaluate_signal(model, latest_X)
+
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"[{timestamp}] Signal: {direction} | Confidence: {confidence:.2%}")
+
+        if confidence >= confidence_threshold:
+            place_limit_order(direction)
+            time.sleep(60)  # cool-down after trading
+        else:
+            time.sleep(15)  # watch silently
+
+    except Exception as e:
+        print("⚠️ Error:", e)
+        time.sleep(30)
