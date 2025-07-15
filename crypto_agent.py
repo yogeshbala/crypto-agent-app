@@ -4,7 +4,7 @@ from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator
 from sklearn.ensemble import RandomForestClassifier
 import datetime
-import time
+import streamlit as st
 
 # --- Binance Futures Testnet Setup ---
 exchange = ccxt.binance({
@@ -14,23 +14,17 @@ exchange = ccxt.binance({
     'options': {'defaultType': 'future'},
     'urls': {'api': 'https://testnet.binancefuture.com'}
 })
-
-# 🛠 Testnet compatibility fixes
 exchange.set_sandbox_mode(True)
-exchange.has['fetchCurrencies'] = False
-exchange.options['warnOnFetchCurrenciesWithoutAuthorization'] = False
 
-symbol = 'BTC/USDT'
+# Default settings
 timeframe = '5m'
-trade_amount = 0.01
-confidence_threshold = 0.75
+confidence_threshold = 0.20  # Lowered for testing
 
 def fetch_ohlcv(symbol):
     data = exchange.fetch_ohlcv(symbol, timeframe, limit=200)
     df = pd.DataFrame(data, columns=['timestamp','open','high','low','close','volume'])
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
     return df
-
 
 def add_indicators(df):
     df['rsi'] = RSIIndicator(df['close'], window=14).rsi()
@@ -59,17 +53,13 @@ def evaluate_signal(model, latest_X):
 
 def get_usdt_balance():
     balance = exchange.fetch_balance()
-    usdt_balance = balance['total'].get('USDT', 0)
-    return usdt_balance
-
+    return balance['total'].get('USDT', 0)
 
 def place_limit_order(symbol, direction, trade_amount):
     ticker = exchange.fetch_ticker(symbol)
     price = ticker['ask'] if direction.lower() == 'buy' else ticker['bid']
-
     if price is None:
         raise ValueError("❌ Couldn't fetch price — ticker may be invalid or unavailable.")
-
     order = exchange.create_order(
         symbol=symbol,
         type='limit',
@@ -80,31 +70,3 @@ def place_limit_order(symbol, direction, trade_amount):
     )
     print(f"📥 Placed LIMIT ORDER: {direction} {trade_amount} @ {price}")
     return order
-
-
-
-def run_auto_trader():
-    import time
-    print("🚀 Auto trading loop started")
-
-    while True:
-        try:
-            df = fetch_ohlcv()
-            X, y = prepare_features(df)
-            model = train_model(X, y)
-            latest_X = X.iloc[-1:]
-            direction, confidence = evaluate_signal(model, latest_X)
-
-            timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            print(f"[{timestamp}] Signal: {direction} | Confidence: {confidence:.2%}")
-
-            if confidence >= confidence_threshold:
-                place_limit_order(direction)
-                time.sleep(60)
-            else:
-                time.sleep(15)
-        except Exception as e:
-            print("⚠️ Error:", e)
-            time.sleep(30)
-
-
