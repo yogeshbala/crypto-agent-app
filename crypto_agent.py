@@ -25,11 +25,12 @@ timeframe = '5m'
 trade_amount = 0.01
 confidence_threshold = 0.75
 
-def fetch_ohlcv():
+def fetch_ohlcv(symbol):
     data = exchange.fetch_ohlcv(symbol, timeframe, limit=200)
     df = pd.DataFrame(data, columns=['timestamp','open','high','low','close','volume'])
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
     return df
+
 
 def add_indicators(df):
     df['rsi'] = RSIIndicator(df['close'], window=14).rsi()
