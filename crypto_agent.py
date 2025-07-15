@@ -76,4 +76,30 @@ def place_limit_order(direction):
     print(f"📥 Placed LIMIT ORDER: {direction} {trade_amount} @ {price}")
     return order
 
+def run_auto_trader():
+    import time
+    print("🚀 Auto trading loop started")
 
+    while True:
+        try:
+            df = fetch_ohlcv()
+            X, y = prepare_features(df)
+            model = train_model(X, y)
+            latest_X = X.iloc[-1:]
+            direction, confidence = evaluate_signal(model, latest_X)
+
+            timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print(f"[{timestamp}] Signal: {direction} | Confidence: {confidence:.2%}")
+
+            if confidence >= confidence_threshold:
+                place_limit_order(direction)
+                time.sleep(60)
+            else:
+                time.sleep(15)
+        except Exception as e:
+            print("⚠️ Error:", e)
+            time.sleep(30)
+
+if st.button("🧠 Activate Background Trader"):
+    st.info("Bot started — running in background")
+    run_auto_trader()
