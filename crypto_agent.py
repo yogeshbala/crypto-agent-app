@@ -63,7 +63,7 @@ def get_usdt_balance():
     return usdt_balance
 
 
-def place_limit_order(direction):
+def place_limit_order(symbol, direction, trade_amount):
     ticker = exchange.fetch_ticker(symbol)
     price = ticker['ask'] if direction.lower() == 'buy' else ticker['bid']
     order = exchange.create_order(
@@ -76,6 +76,7 @@ def place_limit_order(direction):
     )
     print(f"📥 Placed LIMIT ORDER: {direction} {trade_amount} @ {price}")
     return order
+
 
 def run_auto_trader():
     import time
