@@ -5,7 +5,8 @@ from crypto_agent import (
     train_model,
     evaluate_signal,
     place_limit_order,
-    get_usdt_balance  # ✅ new balance function
+    get_usdt_balance,
+    run_auto_trader  # ✅ added trading function
 )
 
 st.set_page_config(page_title="Crypto Signal Agent", layout="wide")
@@ -21,10 +22,11 @@ confidence_threshold = st.slider("Signal Confidence Threshold", 0.5, 0.95, 0.75)
 trade_amount = st.number_input("Trade Amount", min_value=0.001, value=0.01)
 auto_trade = st.checkbox("⚡ Auto Execute Limit Order")
 
-
+# 🧠 Manual bot trigger
 if st.button("🧠 Activate Background Trader"):
-    st.info("Bot started — running in background")
-    run_auto_trader()
+    st.info("Bot started — running one trading cycle")
+    run_auto_trader()  # runs a single signal-check + trade
+
 # 📊 Signal logic
 df = fetch_ohlcv(symbol)
 if not df.empty:
