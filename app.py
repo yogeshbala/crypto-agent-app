@@ -1,22 +1,22 @@
 import streamlit as st
+import time
 from crypto_agent import (
     fetch_ohlcv,
     prepare_features,
     train_model,
     evaluate_signal,
     place_limit_order,
-    get_usdt_balance,
-    run_auto_trader  # ✅ added trading function
+    get_usdt_balance
 )
+
+st.set_page_config(page_title="Crypto Signal Agent", layout="wide")
+
+# 🔁 Auto-refresh every 3 seconds
 st.markdown(
-    """
-    <meta http-equiv="refresh" content="3">
-    """,
+    "<meta http-equiv='refresh' content='3'>",
     unsafe_allow_html=True
 )
 
-
-st.set_page_config(page_title="Crypto Signal Agent", layout="wide")
 st.title("🧠 Crypto Futures AI Agent (Testnet)")
 
 # 💰 Show live USDT balance
@@ -28,11 +28,6 @@ symbol = st.selectbox("Select Pair", ["BTC/USDT", "ETH/USDT"])
 confidence_threshold = st.slider("Signal Confidence Threshold", 0.2, 0.95, 0.20)
 trade_amount = st.number_input("Trade Amount", min_value=0.001, value=0.01)
 auto_trade = st.checkbox("⚡ Auto Execute Limit Order")
-
-# 🧠 Manual bot trigger
-if st.button("🧠 Activate Background Trader"):
-    st.info("Bot started — running one trading cycle")
-    run_auto_trader()  # runs a single signal-check + trade
 
 # 📊 Signal logic
 df = fetch_ohlcv(symbol)
@@ -47,18 +42,14 @@ if not df.empty:
 
     if confidence >= confidence_threshold:
         st.success(f"🎯 High-confidence signal detected: {direction}")
-        import time
-        # 🧠 Track last trade time
-        if "last_trade_time" not in st.session_state:
-            st.session_state.last_trade_time = 0
-        
-        if time.time() - st.session_state.last_trade_time > 60:  # cooldown of 60 seconds
-            order = place_limit_order(symbol, direction, trade_amount)
-            st.toast(f"✅ Limit order placed at {order['price']}")
-            st.session_state.last_trade_time = time.time()
-        else:
-            st.info("⏱ Waiting — trade already placed recently.")
-
-
+        if auto_trade:
+            if "last_trade_time" not in st.session_state:
+                st.session_state.last_trade_time = 0
+            if time.time() - st.session_state.last_trade_time > 60:
+                order = place_limit_order(symbol, direction, trade_amount)
+                st.toast(f"✅ Limit order placed at {order['price']}")
+                st.session_state.last_trade_time = time.time()
+            else:
+                st.info("⏱ Trade cooldown active — waiting before next execution.")
     else:
         st.warning("🕒 Watching silently... Confidence below threshold.")
