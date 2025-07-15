@@ -21,6 +21,10 @@ confidence_threshold = st.slider("Signal Confidence Threshold", 0.5, 0.95, 0.75)
 trade_amount = st.number_input("Trade Amount", min_value=0.001, value=0.01)
 auto_trade = st.checkbox("⚡ Auto Execute Limit Order")
 
+
+if st.button("🧠 Activate Background Trader"):
+    st.info("Bot started — running in background")
+    run_auto_trader()
 # 📊 Signal logic
 df = fetch_ohlcv(symbol)
 if not df.empty:
