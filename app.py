@@ -8,6 +8,13 @@ from crypto_agent import (
     get_usdt_balance,
     run_auto_trader  # ✅ added trading function
 )
+st.markdown(
+    """
+    <meta http-equiv="refresh" content="3">
+    """,
+    unsafe_allow_html=True
+)
+
 
 st.set_page_config(page_title="Crypto Signal Agent", layout="wide")
 st.title("🧠 Crypto Futures AI Agent (Testnet)")
@@ -40,8 +47,18 @@ if not df.empty:
 
     if confidence >= confidence_threshold:
         st.success(f"🎯 High-confidence signal detected: {direction}")
-        if auto_trade:
+        import time
+        # 🧠 Track last trade time
+        if "last_trade_time" not in st.session_state:
+            st.session_state.last_trade_time = 0
+        
+        if time.time() - st.session_state.last_trade_time > 60:  # cooldown of 60 seconds
             order = place_limit_order(symbol, direction, trade_amount)
             st.toast(f"✅ Limit order placed at {order['price']}")
+            st.session_state.last_trade_time = time.time()
+        else:
+            st.info("⏱ Waiting — trade already placed recently.")
+
+
     else:
         st.warning("🕒 Watching silently... Confidence below threshold.")
