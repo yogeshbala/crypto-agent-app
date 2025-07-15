@@ -100,6 +100,4 @@ def run_auto_trader():
             print("⚠️ Error:", e)
             time.sleep(30)
 
-if st.button("🧠 Activate Background Trader"):
-    st.info("Bot started — running in background")
-    run_auto_trader()
+
