@@ -33,4 +33,9 @@ if not df.empty:
     st.markdown(f"**Confidence:** `{confidence:.2%}`")
 
     if confidence >= confidence_threshold:
-        st.success(f"🎯 High-confidence
+        st.success(f"🎯 High-confidence signal detected: {direction}")
+        if auto_trade:
+            order = place_limit_order(symbol, direction, trade_amount)
+            st.toast(f"✅ Limit order placed at {order['price']}")
+    else:
+        st.warning("🕒 Watching silently... Confidence below threshold.")
