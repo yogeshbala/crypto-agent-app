@@ -56,6 +56,12 @@ def evaluate_signal(model, latest_X):
     direction = 'BUY' if pred[0] == 1 else 'SELL'
     return direction, confidence
 
+def get_usdt_balance():
+    balance = exchange.fetch_balance()
+    usdt_balance = balance['total'].get('USDT', 0)
+    return usdt_balance
+
+
 def place_limit_order(direction):
     ticker = exchange.fetch_ticker(symbol)
     price = ticker['ask'] if direction.lower() == 'buy' else ticker['bid']
