@@ -1,3 +1,8 @@
+from crypto_agent import (
+    fetch_ohlcv, prepare_features, train_model,
+    evaluate_signal, place_limit_order
+)
+
 # --- Main Auto Loop ---
 print("🚀 Auto trading bot running...")
 
