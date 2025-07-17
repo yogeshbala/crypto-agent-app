@@ -15,7 +15,7 @@ st.title("🧠 Crypto Futures AI Agent (Testnet)")
 
 # --- Controls
 symbol = st.selectbox("Select Pair", ["BTCUSDT", "ETHUSDT"])
-confidence_threshold = st.slider("Confidence Threshold", 0.2, 0.95, 0.20)
+confidence_threshold = st.slider("Confidence Threshold", 0.1, 0.95, 0.20)
 trade_amount = st.number_input("Trade Amount (USDT)", min_value=0.001, value=0.01)
 auto_trade = st.checkbox("⚡ Auto Execute Limit Order")
 show_table = st.checkbox("📊 Show Signal History", value=False)
