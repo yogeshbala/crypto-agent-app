@@ -7,7 +7,7 @@ from crypto_agent import (
     evaluate_signal,
     place_limit_order,
     get_usdt_balance,
-    exchange  # to access live price via ticker
+    exchange
 )
 
 st.set_page_config(page_title="Crypto Signal Agent", layout="wide")
@@ -18,13 +18,15 @@ symbol = st.selectbox("Select Pair", ["BTCUSDT", "ETHUSDT"])
 confidence_threshold = st.slider("Confidence Threshold", 0.2, 0.95, 0.20)
 trade_amount = st.number_input("Trade Amount (USDT)", min_value=0.001, value=0.01)
 auto_trade = st.checkbox("⚡ Auto Execute Limit Order")
+show_table = st.checkbox("📊 Show Signal History", value=False)  # ✅ Declared outside loop
 
 # --- Balance
 balance = get_usdt_balance()
 st.metric("USDT Balance", f"{balance:.2f} USDT")
 
-# --- Signal + Loop
 signal_placeholder = st.empty()
+
+# --- History state
 if "signal_history" not in st.session_state:
     st.session_state.signal_history = []
 
@@ -37,11 +39,11 @@ if symbol:
             latest_X = X.iloc[-1:]
             direction, confidence = evaluate_signal(model, latest_X)
 
-            # Live price preview
+            # Fetch live price
             ticker = exchange.fetch_ticker(symbol)
             price = ticker.get('ask') if direction.lower() == 'buy' else ticker.get('bid')
 
-            # Update signal log
+            # Update history
             st.session_state.signal_history.append({
                 "Time": time.strftime("%H:%M:%S"),
                 "Direction": direction,
@@ -75,7 +77,8 @@ if symbol:
                 else:
                     st.warning("🕒 Confidence below threshold.")
 
-            if st.checkbox("📊 Show Signal History", value=False):
+            # ✅ Show history only if checkbox is ticked
+            if show_table:
                 st.dataframe(st.session_state.signal_history[::-1])
 
         time.sleep(3)
