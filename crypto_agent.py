@@ -5,6 +5,7 @@ from ta.trend import EMAIndicator
 from sklearn.ensemble import RandomForestClassifier
 import streamlit as st
 
+# --- Binance Testnet Setup ---
 exchange = ccxt.binance({
     'apiKey': '9424f058f6e43ccc326495e1b100dae2b7c74fc520a8936e545d7c0378afeff0',       # <- Replace with Streamlit secret or .env loading
     'secret': '75c405b431c4620554ee25d2fe4cd5b54daf21f0269d57c6f3509220f72214a0',
@@ -32,7 +33,6 @@ def prepare_features(df):
     return df[['rsi', 'ema_fast', 'ema_slow']], df['target']
 
 def train_model(X, y):
-    st.write(f"🧮 Class balance: {y.value_counts().to_dict()}")
     model = RandomForestClassifier(class_weight='balanced')
     model.fit(X, y)
     return model
@@ -52,8 +52,7 @@ def place_limit_order(symbol, direction, trade_amount):
     price = ticker.get('ask') if direction.lower() == 'buy' else ticker.get('bid')
 
     if price is None:
-        print("⚠️ Skipping order — price not available.")
-        return None
+        return None  # Skip gracefully
 
     order = exchange.create_order(
         symbol=symbol,
