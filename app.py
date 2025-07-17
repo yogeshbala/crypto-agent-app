@@ -75,5 +75,7 @@ if symbol:
                 else:
                     st.warning("🕒 Confidence below threshold.")
 
-            st.dataframe(st.session_state.signal_history[::-1])
+            if st.checkbox("📊 Show Signal History", value=False):
+                st.dataframe(st.session_state.signal_history[::-1])
+
         time.sleep(3)
