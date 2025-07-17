@@ -47,13 +47,9 @@ def get_usdt_balance():
     balance = exchange.fetch_balance()
     return balance['total'].get('USDT', 0)
 
-def place_limit_order(symbol, direction, trade_amount):
-    ticker = exchange.fetch_ticker(symbol)
-    price = ticker.get('ask') if direction.lower() == 'buy' else ticker.get('bid')
-
+def place_limit_order(symbol, direction, trade_amount, price):
     if price is None:
-        return None  # Skip gracefully
-
+        return None  # Gracefully skip trade
     order = exchange.create_order(
         symbol=symbol,
         type='limit',
