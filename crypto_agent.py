@@ -5,7 +5,7 @@ from ta.trend import EMAIndicator
 from sklearn.ensemble import RandomForestClassifier
 import streamlit as st
 
-# --- Setup Binance Testnet ---
+# --- Binance Testnet Setup ---
 exchange = ccxt.binance({
     'apiKey': '9424f058f6e43ccc326495e1b100dae2b7c74fc520a8936e545d7c0378afeff0',       # <- Replace with Streamlit secret or .env loading
     'secret': '75c405b431c4620554ee25d2fe4cd5b54daf21f0269d57c6f3509220f72214a0',
@@ -15,7 +15,6 @@ exchange = ccxt.binance({
 })
 exchange.set_sandbox_mode(True)
 
-# --- Feature & Signal Functions ---
 def fetch_ohlcv(symbol):
     data = exchange.fetch_ohlcv(symbol, timeframe='5m', limit=200)
     df = pd.DataFrame(data, columns=['timestamp','open','high','low','close','volume'])
@@ -52,9 +51,12 @@ def get_usdt_balance():
 
 def place_limit_order(symbol, direction, trade_amount):
     ticker = exchange.fetch_ticker(symbol)
-    price = ticker['ask'] if direction.lower() == 'buy' else ticker['bid']
+    price = ticker.get('ask') if direction.lower() == 'buy' else ticker.get('bid')
+
     if price is None:
-        raise ValueError("❌ No valid price from ticker.")
+        print("⚠️ Skipping order — price not available.")
+        return None
+
     order = exchange.create_order(
         symbol=symbol,
         type='limit',
