@@ -1,5 +1,6 @@
 import time
 import streamlit as st
+from crypto_agent import fetch_ohlcv
 
 signal_placeholder = st.empty()
 
