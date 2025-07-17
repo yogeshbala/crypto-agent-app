@@ -15,10 +15,10 @@ st.title("🧠 Crypto Futures AI Agent (Testnet)")
 
 # --- Controls
 symbol = st.selectbox("Select Pair", ["BTCUSDT", "ETHUSDT"])
-confidence_threshold = st.slider("Confidence Threshold", 0.1, 0.95, 0.20)
+confidence_threshold = st.slider("Confidence Threshold", 0.2, 0.95, 0.20)
 trade_amount = st.number_input("Trade Amount (USDT)", min_value=0.001, value=0.01)
 auto_trade = st.checkbox("⚡ Auto Execute Limit Order")
-show_table = st.checkbox("📊 Show Signal History", value=False)  # ✅ Declared outside loop
+show_table = st.checkbox("📊 Show Signal History", value=False)
 
 # --- Balance
 balance = get_usdt_balance()
@@ -39,9 +39,11 @@ if symbol:
             latest_X = X.iloc[-1:]
             direction, confidence = evaluate_signal(model, latest_X)
 
-            # Fetch live price
+            # Get price from ticker, fallback to candle close
             ticker = exchange.fetch_ticker(symbol)
-            price = ticker.get('ask') if direction.lower() == 'buy' else ticker.get('bid')
+            live_price = ticker.get('ask') if direction.lower() == 'buy' else ticker.get('bid')
+            fallback_price = df['close'].iloc[-1]
+            price = live_price or fallback_price
 
             # Update history
             st.session_state.signal_history.append({
@@ -55,10 +57,7 @@ if symbol:
             with signal_placeholder.container():
                 st.markdown(f"### 📈 Signal: `{direction}`")
                 st.markdown(f"**Confidence:** `{confidence:.2%}`")
-                if price:
-                    st.info(f"💲 Expected {direction} price for `{symbol}`: `{price:.2f}` USDT")
-                else:
-                    st.warning("⚠️ Skipped trade — price not available.")
+                st.info(f"💲 Execution price for `{symbol}`: `{price:.2f}` USDT")
 
                 if confidence >= confidence_threshold:
                     st.success(f"🎯 Signal detected: {direction}")
@@ -66,18 +65,17 @@ if symbol:
                         if "last_trade_time" not in st.session_state:
                             st.session_state.last_trade_time = 0
                         if time.time() - st.session_state.last_trade_time > 60:
-                            order = place_limit_order(symbol, direction, trade_amount, price)
+                            order = place_limit_order(symbol, direction, trade_amount, fallback_price)
                             if order:
                                 st.toast(f"✅ Order placed at {order['price']}")
                                 st.session_state.last_trade_time = time.time()
                             else:
-                                st.warning("⚠️ Skipped trade due to missing price.")
+                                st.warning("⚠️ Skipped trade — no valid price.")
                         else:
                             st.info("⏱ Cooldown active.")
                 else:
                     st.warning("🕒 Confidence below threshold.")
 
-            # ✅ Show history only if checkbox is ticked
             if show_table:
                 st.dataframe(st.session_state.signal_history[::-1])
 
