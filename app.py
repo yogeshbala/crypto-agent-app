@@ -1,40 +1,9 @@
-import streamlit as st
-import time
-from crypto_agent import (
-    fetch_ohlcv,
-    prepare_features,
-    train_model,
-    evaluate_signal,
-    place_limit_order,
-    get_usdt_balance
-)
-
-st.set_page_config(page_title="Crypto Signal Agent", layout="wide")
-
-# 🔁 Auto-refresh every 3 seconds
-st.markdown(
-    "<meta http-equiv='refresh' content='3'>",
-    unsafe_allow_html=True
-)
-
-st.title("🧠 Crypto Futures AI Agent (Testnet)")
-
-# 💰 Show live USDT balance
-usdt_balance = get_usdt_balance()
-st.metric("Available USDT (Testnet)", f"{usdt_balance:.2f} USDT")
-
-# 🎛️ User controls
-symbol = st.selectbox("Select Pair", ["BTC/USDT", "ETH/USDT"])
-confidence_threshold = st.slider("Signal Confidence Threshold", 0.2, 0.95, 0.20)
-trade_amount = st.number_input("Trade Amount", min_value=0.001, value=0.01)
-auto_trade = st.checkbox("⚡ Auto Execute Limit Order")
-
-# 📊 Signal logic
 import time
 
 signal_placeholder = st.empty()
 
-while True:
+# Run signal refresh loop safely
+for i in range(1000):  # refresh ~1000 cycles
     df = fetch_ohlcv(symbol)
     if not df.empty:
         X, y = prepare_features(df)
@@ -59,5 +28,5 @@ while True:
                         st.info("⏱ Trade cooldown active — waiting before next execution.")
             else:
                 st.warning("🕒 Watching silently... Confidence below threshold.")
-    
-    time.sleep(3)  # Wait 3 seconds before next refresh
+
+    time.sleep(3)
