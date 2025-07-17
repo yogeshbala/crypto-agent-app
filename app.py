@@ -11,22 +11,21 @@ from crypto_agent import (
 )
 
 st.set_page_config(page_title="Crypto Signal Agent", layout="wide")
-st.title("🧠 Crypto Futures AI Agent (Testnet)")
+st.title("🧠 Crypto Futures AI Agent with 50x Leverage")
 
 # --- Controls
 symbol = st.selectbox("Select Pair", ["BTCUSDT", "ETHUSDT"])
-confidence_threshold = st.slider("Confidence Threshold", 0.1, 0.95, 0.20)
-trade_amount = st.number_input("Trade Amount (USDT)", min_value=0.001, value=0.01)
+confidence_threshold = st.slider("Confidence Threshold", 0.2, 0.95, 0.3)
 auto_trade = st.checkbox("⚡ Auto Execute Limit Order")
 show_table = st.checkbox("📊 Show Signal History", value=False)
+leverage = 50  # fixed leverage
+sl_pct = 0.01  # 1% stop loss
+tp_pct = 0.03  # 3% take profit
 
-# --- Balance
 balance = get_usdt_balance()
-st.metric("USDT Balance", f"{balance:.2f} USDT")
+st.metric("USDT Balance", f"{balance:.2f}")
 
 signal_placeholder = st.empty()
-
-# --- History state
 if "signal_history" not in st.session_state:
     st.session_state.signal_history = []
 
@@ -39,25 +38,26 @@ if symbol:
             latest_X = X.iloc[-1:]
             direction, confidence = evaluate_signal(model, latest_X)
 
-            # Get price from ticker, fallback to candle close
             ticker = exchange.fetch_ticker(symbol)
-            live_price = ticker.get('ask') if direction.lower() == 'buy' else ticker.get('bid')
+            live_price = ticker.get('ask') if direction == 'BUY' else ticker.get('bid')
             fallback_price = df['close'].iloc[-1]
             price = live_price or fallback_price
 
-            # Update history
             st.session_state.signal_history.append({
                 "Time": time.strftime("%H:%M:%S"),
                 "Direction": direction,
                 "Confidence": f"{confidence:.2%}",
-                "Price": f"{price:.2f}" if price else "N/A"
+                "Price": f"{price:.2f}"
             })
             st.session_state.signal_history = st.session_state.signal_history[-10:]
+
+            sl_price = round(price * (1 - sl_pct), 2) if direction == 'BUY' else round(price * (1 + sl_pct), 2)
+            tp_price = round(price * (1 + tp_pct), 2) if direction == 'BUY' else round(price * (1 - tp_pct), 2)
 
             with signal_placeholder.container():
                 st.markdown(f"### 📈 Signal: `{direction}`")
                 st.markdown(f"**Confidence:** `{confidence:.2%}`")
-                st.info(f"💲 Execution price for `{symbol}`: `{price:.2f}` USDT")
+                st.info(f"💲 Execution Price: `{price:.2f}` | SL: `{sl_price}` | TP: `{tp_price}` | Leverage: `{leverage}x`")
 
                 if confidence >= confidence_threshold:
                     st.success(f"🎯 Signal detected: {direction}")
@@ -65,12 +65,12 @@ if symbol:
                         if "last_trade_time" not in st.session_state:
                             st.session_state.last_trade_time = 0
                         if time.time() - st.session_state.last_trade_time > 60:
-                            order = place_limit_order(symbol, direction, trade_amount, fallback_price)
+                            order = place_limit_order(symbol, direction, leverage, balance, price, sl_pct, tp_pct)
                             if order:
                                 st.toast(f"✅ Order placed at {order['price']}")
                                 st.session_state.last_trade_time = time.time()
                             else:
-                                st.warning("⚠️ Skipped trade — no valid price.")
+                                st.warning("⚠️ Skipped trade — invalid price.")
                         else:
                             st.info("⏱ Cooldown active.")
                 else:
