@@ -47,20 +47,33 @@ def get_usdt_balance():
     balance = exchange.fetch_balance()
     return balance['total'].get('USDT', 0)
 
-def place_limit_order(symbol, direction, trade_amount, fallback_price):
-    ticker = exchange.fetch_ticker(symbol)
-    live_price = ticker.get('ask') if direction.lower() == 'buy' else ticker.get('bid')
-
-    price = live_price or fallback_price
+def place_limit_order(symbol, direction, leverage, balance_usdt, price, sl_pct=0.01, tp_pct=0.03):
     if price is None:
         return None
+
+    # --- Calculate position size using leverage ---
+    trade_value = balance_usdt * leverage
+    quantity = round(trade_value / price, 5)
+
+    # --- Compute SL and TP prices ---
+    sl_price = round(price * (1 - sl_pct), 2) if direction.lower() == 'buy' else round(price * (1 + sl_pct), 2)
+    tp_price = round(price * (1 + tp_pct), 2) if direction.lower() == 'buy' else round(price * (1 - tp_pct), 2)
+
+    params = {
+        'reduceOnly': False,
+        'positionSide': 'BOTH',
+        'timeInForce': 'GTC',
+        'stopPrice': sl_price,
+        'workingType': 'MARK_PRICE',
+        'priceProtect': True
+    }
 
     order = exchange.create_order(
         symbol=symbol,
         type='limit',
         side=direction.lower(),
-        amount=trade_amount,
+        amount=quantity,
         price=price,
-        params={'reduceOnly': False}
+        params=params
     )
     return order
